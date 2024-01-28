@@ -33,21 +33,21 @@ func (q *Question) Encode() ([]byte, error) {
 	return buffer, nil
 }
 
-func DecodeQuestion(data []byte) (q *Question, err error) {
+func DecodeQuestion(data []byte) (q *Question, bytesConsumed int, err error) {
 	q = &Question{}
 
 	labels := []string{}
 
-	var i = 0
-	for i < len(data) {
-		labelLength := int(data[i])
-		i += 1
+	var offset = 0
+	for offset < len(data) {
+		labelLength := int(data[offset])
+		offset += 1
 		if labelLength == 0 {
 			break
 		}
 
-		if labelLength > 63 || i+labelLength > len(data) {
-			return nil, fmt.Errorf(
+		if labelLength > 63 || offset+labelLength > len(data) {
+			return nil, 0, fmt.Errorf(
 				"Invalid label in question. "+
 					"Expected at most 63 bytes or %d bytes, got %d",
 				len(data),
@@ -55,20 +55,22 @@ func DecodeQuestion(data []byte) (q *Question, err error) {
 			)
 		}
 
-		labels = append(labels, string(data[i:i+labelLength]))
-		i += labelLength
+		labels = append(labels, string(data[offset:offset+labelLength]))
+		offset += labelLength
 	}
 
-	if i+4 > len(data) {
-		return nil, fmt.Errorf(
+	if offset+4 > len(data) {
+		return nil, 0, fmt.Errorf(
 			"Invalid question. Expected at least 4 bytes for Type and Class, got %d",
-			len(data),
+			len(data)-offset,
 		)
 	}
 
 	q.Name = strings.Join(labels, ".")
-	q.Type = uint16(data[len(data)-4])<<8 | uint16(data[len(data)-3])
-	q.Class = uint16(data[len(data)-2])<<8 | uint16(data[len(data)-1])
+	q.Type = uint16(data[offset])<<8 | uint16(data[offset+1])
+	q.Class = uint16(data[offset+2])<<8 | uint16(data[offset+3])
 
-	return q, nil
+	offset += 4
+
+	return q, offset, nil
 }

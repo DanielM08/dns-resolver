@@ -24,11 +24,13 @@ func main() {
 
 	fmt.Println("DNS Server is listening on port: ", conn.LocalAddr().(*net.UDPAddr).Port)
 
-	fmt.Printf("Message sent: %x\n", message)
+	fmt.Printf("Encoded Message sent: %x\n", message)
 	_, err = conn.Write(message)
 	if err != nil {
 		fmt.Println("Error while sending message:", err)
 	}
+
+	fmt.Println("------------------")
 
 	response := make([]byte, 512) // 512 bytes is the maximum size of a DNS message
 	n, err := conn.Read(response)
@@ -40,5 +42,10 @@ func main() {
 	// Trim the response to actual size
 	response = response[:n]
 
-	fmt.Printf("Received response: %x\n", response)
+	_, err = resolver.DecodeMessage(response)
+
+	if err != nil {
+		fmt.Println("Error while decoding message:", err)
+		return
+	}
 }

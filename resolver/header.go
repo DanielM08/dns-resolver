@@ -40,7 +40,7 @@ func (h *Header) Encode() []byte {
 	return buffer
 }
 
-func Decode(data []byte) (h *Header, err error) {
+func DecodeHeader(data []byte) (h *Header, err error) {
 
 	if len(data) < 12 {
 		return nil, fmt.Errorf("Invalid header. Expected 12 bytes, got %d", len(data))

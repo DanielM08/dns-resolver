@@ -40,53 +40,71 @@ func GenMessage() ([]byte, error) {
 	}
 
 	message := append(encodedHeader, questionEncoded...)
-
+	message = append(message, 0, 0, 0)
 	return message, nil
 }
 
 func DecodeMessage(dnsResponse []byte) (DNSMessage, error) {
 	fmt.Println("Decoding message..., message size: ", len(dnsResponse))
 
-	header, err := DecodeHeader(dnsResponse[:12])
+	header, offset, err := DecodeHeader(dnsResponse)
 
 	if err != nil {
 		return DNSMessage{}, err
 	}
 
-	question, bytesConsumed, err := DecodeQuestion(dnsResponse[12:])
+	question, offset, err := DecodeQuestion(dnsResponse, offset)
 
 	if err != nil {
 		return DNSMessage{}, err
 	}
 
-	// answers, err := DecodeResourceRecords(dnsResponse, header.AnswerRecordCount)
+	answerRecords, offset, err := getResourceRecords(dnsResponse, int(header.AnswerRecordCount), offset)
 
-	// if err != nil {
-	// 	return DNSMessage{}, err
-	// }
+	if err != nil {
+		return DNSMessage{}, err
+	}
 
-	// authority, err := DecodeResourceRecords(dnsResponse, header.AuthorityRecordCount)
+	authorityRecords, offset, err := getResourceRecords(dnsResponse, int(header.AuthorityRecordCount), offset)
 
-	// if err != nil {
-	// 	return DNSMessage{}, err
-	// }
+	if err != nil {
+		return DNSMessage{}, err
+	}
 
-	// additional, err := DecodeResourceRecords(dnsResponse, header.AdditionalRecordCount)
+	additionalRecords, offset, err := getResourceRecords(dnsResponse, int(header.AdditionalRecordCount), offset)
 
-	// if err != nil {
-	// 	return DNSMessage{}, err
-	// }
+	if err != nil {
+		return DNSMessage{}, err
+	}
 
 	fmt.Printf("Response Header: %+v\n", header)
 	fmt.Printf("Response Question: %+v\n", question)
-	fmt.Printf("Other bytes: %x\n", dnsResponse[12+bytesConsumed:])
+	fmt.Printf("Answer Records: %+v\n", answerRecords)
+	fmt.Printf("Authority Records: %+v\n", authorityRecords)
+	fmt.Printf("Additional Records: %+v\n", additionalRecords)
 
 	return DNSMessage{
 		Header:     *header,
 		Question:   *question,
-		Answers:    nil,
-		Authority:  nil,
-		Additional: nil,
+		Answers:    answerRecords,
+		Authority:  authorityRecords,
+		Additional: additionalRecords,
 	}, nil
 
+}
+
+func getResourceRecords(buffer []byte, count, offset int) ([]ResourceRecord, int, error) {
+	var resourceRecords = make([]ResourceRecord, count)
+	for i := 0; i < int(count); i++ {
+		answerRecord, newOffset, err := DecodeResourceRecord(buffer, offset)
+
+		if err != nil {
+			return resourceRecords, 0, err
+		}
+
+		offset = newOffset
+		resourceRecords[i] = *answerRecord
+	}
+
+	return resourceRecords, offset, nil
 }

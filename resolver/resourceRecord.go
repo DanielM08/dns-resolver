@@ -2,7 +2,6 @@ package resolver
 
 import (
 	"fmt"
-	"strings"
 )
 
 type ResourceRecord struct {
@@ -14,16 +13,34 @@ type ResourceRecord struct {
 	Data   string
 }
 
-func DecodeResource(buffer []byte, startoffset int) (*ResourceRecord, int, error) {
+func DecodeResourceRecord(buffer []byte, offset int) (*ResourceRecord, int, error) {
+	name, offset, err := DecodeDomainName(buffer, offset)
 
-	return &ResourceRecord{}, 0, nil
+	if err != nil {
+		return nil, 0, err
+	}
+
+	var rrType = uint16(buffer[offset])<<8 + uint16(buffer[offset+1])
+	var rrClass = uint16(buffer[offset+2])<<8 + uint16(buffer[offset+3])
+	var rrTtl = uint32(buffer[offset+4])<<24 + uint32(buffer[offset+5])<<16 + uint32(buffer[offset+6])<<8 + uint32(buffer[offset+7])
+	var rrLength = uint16(buffer[offset+8])<<8 + uint16(buffer[offset+9])
+
+	// Check if the buffer contains enough data for rData.
+	if offset+10+int(rrLength) > len(buffer) {
+		return nil, 0, fmt.Errorf("buffer too short for rData")
+	}
+
+	return &ResourceRecord{
+		Name:   name,
+		Type:   rrType,
+		Class:  rrClass,
+		TTL:    rrTtl,
+		Length: rrLength,
+		Data:   string(buffer[offset+10 : offset+10+int(rrLength)]),
+	}, offset + 10 + int(rrLength), nil
 }
 
 func DecodeDomainName(buffer []byte, offset int) (string, int, error) {
-	if offset >= len(buffer) {
-		return "", 0, fmt.Errorf("Invalid domain name. Offset %d exceeds buffer size %d", offset, len(buffer))
-	}
-
 	const mask = 0xC0                // 192 in decimal
 	if buffer[offset]&mask == mask { // A Pointer
 		pointerOffset := int(buffer[offset]&^mask)<<8 + int(buffer[offset+1])
@@ -36,32 +53,5 @@ func DecodeDomainName(buffer []byte, offset int) (string, int, error) {
 
 		return domainName, offset + 2, nil
 	}
-
-	var labels []string
-	for {
-		labelLength := int(buffer[offset])
-
-		offset += 1
-		if labelLength == 0 {
-			break
-		}
-
-		if labelLength > 63 || offset+labelLength > len(buffer) {
-			return "", 0, fmt.Errorf(
-				"Invalid label in question. "+
-					"Expected at most 63 bytes or %d bytes, got %d",
-				len(buffer),
-				labelLength,
-			)
-		}
-
-		labels = append(labels, string(buffer[offset:offset+labelLength]))
-		offset += labelLength
-
-		if buffer[offset] == 0 {
-			offset += 1
-			break
-		}
-	}
-	return strings.Join(labels, "."), offset, nil
+	return DecodeLabelNames(buffer, offset)
 }

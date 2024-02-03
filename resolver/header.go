@@ -40,10 +40,10 @@ func (h *Header) Encode() []byte {
 	return buffer
 }
 
-func DecodeHeader(data []byte) (h *Header, err error) {
+func DecodeHeader(data []byte) (h *Header, offset int, err error) {
 
 	if len(data) < 12 {
-		return nil, fmt.Errorf("Invalid header. Expected 12 bytes, got %d", len(data))
+		return nil, 0, fmt.Errorf("Invalid header. Expected 12 bytes, got %d", len(data))
 	}
 
 	h = &Header{}
@@ -65,5 +65,5 @@ func DecodeHeader(data []byte) (h *Header, err error) {
 	h.AuthorityRecordCount = uint16(data[8])<<8 | uint16(data[9])
 	h.AdditionalRecordCount = uint16(data[10])<<8 | uint16(data[11])
 
-	return h, nil
+	return h, 12, nil
 }

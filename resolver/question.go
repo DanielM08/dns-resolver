@@ -33,43 +33,10 @@ func (q *Question) Encode() ([]byte, error) {
 	return buffer, nil
 }
 
-func DecodeLabelNames(data []byte, offset int) (string, int, error) {
-	labels := []string{}
-
-	for offset < len(data) {
-		labelLength := int(data[offset])
-		offset += 1
-		if labelLength == 0 {
-			break
-		}
-
-		if labelLength > 63 || offset+labelLength > len(data) {
-			return "", 0, fmt.Errorf(
-				"Invalid label in question. "+
-					"Expected at most 63 bytes or %d bytes, got %d",
-				len(data),
-				labelLength,
-			)
-		}
-
-		labels = append(labels, string(data[offset:offset+labelLength]))
-		offset += labelLength
-	}
-
-	if offset+4 > len(data) {
-		return "", 0, fmt.Errorf(
-			"Invalid question. Expected at least 4 bytes for Type and Class, got %d",
-			len(data)-offset,
-		)
-	}
-
-	return strings.Join(labels, "."), offset, nil
-}
-
 func DecodeQuestion(data []byte, offset int) (*Question, int, error) {
 	var q = &Question{}
 	var err error = nil
-	q.Name, offset, err = DecodeLabelNames(data, offset)
+	q.Name, offset, err = DecodeDomainName(data, offset)
 
 	if err != nil {
 		return nil, 0, err

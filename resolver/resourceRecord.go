@@ -2,6 +2,7 @@ package resolver
 
 import (
 	"fmt"
+	"strings"
 )
 
 type ResourceRecord struct {
@@ -30,28 +31,24 @@ func DecodeResourceRecord(buffer []byte, offset int) (*ResourceRecord, int, erro
 		return nil, 0, fmt.Errorf("buffer too short for rData")
 	}
 
+	var rrData = ""
+	if rrType == 1 && rrClass == 1 {
+		labels := []string{}
+
+		for i := 0; i < int(rrLength); i++ {
+			labels = append(labels, fmt.Sprintf("%d", buffer[offset+10+i]))
+		}
+		rrData = strings.Join(labels, ".")
+	} else {
+		rrData = string(buffer[offset+10 : offset+10+int(rrLength)])
+	}
+
 	return &ResourceRecord{
 		Name:   name,
 		Type:   rrType,
 		Class:  rrClass,
 		TTL:    rrTtl,
 		Length: rrLength,
-		Data:   string(buffer[offset+10 : offset+10+int(rrLength)]),
+		Data:   rrData,
 	}, offset + 10 + int(rrLength), nil
-}
-
-func DecodeDomainName(buffer []byte, offset int) (string, int, error) {
-	const mask = 0xC0                // 192 in decimal
-	if buffer[offset]&mask == mask { // A Pointer
-		pointerOffset := int(buffer[offset]&^mask)<<8 + int(buffer[offset+1])
-
-		domainName, _, err := DecodeDomainName(buffer, pointerOffset)
-
-		if err != nil {
-			return "", 0, err
-		}
-
-		return domainName, offset + 2, nil
-	}
-	return DecodeLabelNames(buffer, offset)
 }

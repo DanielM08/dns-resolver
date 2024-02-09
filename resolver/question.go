@@ -33,12 +33,12 @@ func (q *Question) Encode() ([]byte, error) {
 	return buffer, nil
 }
 
-func DecodeQuestion(data []byte, offset int) (*Question, int, error) {
+func DecodeQuestion(buffer []byte, offset int) (*Question, int, error) {
 	var q = &Question{}
-	q.Name, offset = DecodeDomainNameWithPointer(data, offset)
+	q.Name, offset = DecodeDomainName(buffer, offset)
 
-	q.Type = uint16(data[offset])<<8 | uint16(data[offset+1])
-	q.Class = uint16(data[offset+2])<<8 | uint16(data[offset+3])
+	q.Type = uint16(buffer[offset])<<8 | uint16(buffer[offset+1])
+	q.Class = uint16(buffer[offset+2])<<8 | uint16(buffer[offset+3])
 
 	offset += 4
 

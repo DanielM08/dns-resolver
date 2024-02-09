@@ -40,10 +40,10 @@ func (h *Header) Encode() []byte {
 	return buffer
 }
 
-func DecodeHeader(data []byte) (h *Header, offset int, err error) {
+func DecodeHeader(buffer []byte) (h *Header, offset int, err error) {
 
-	if len(data) < 12 {
-		return nil, 0, fmt.Errorf("Invalid header. Expected 12 bytes, got %d", len(data))
+	if len(buffer) < 12 {
+		return nil, 0, fmt.Errorf("Invalid header. Expected 12 bytes, got %d", len(buffer))
 	}
 
 	h = &Header{}
@@ -58,12 +58,12 @@ func DecodeHeader(data []byte) (h *Header, offset int, err error) {
 
 		|: This is the bitwise OR operator. It combines the high byte and the low byte to form the original uint16.
 	*/
-	h.ID = uint16(data[0])<<8 | uint16(data[1])
-	h.Flags = uint16(data[2])<<8 | uint16(data[3])
-	h.QuestionCount = uint16(data[4])<<8 | uint16(data[5])
-	h.AnswerRecordCount = uint16(data[6])<<8 | uint16(data[7])
-	h.AuthorityRecordCount = uint16(data[8])<<8 | uint16(data[9])
-	h.AdditionalRecordCount = uint16(data[10])<<8 | uint16(data[11])
+	h.ID = uint16(buffer[0])<<8 | uint16(buffer[1])
+	h.Flags = uint16(buffer[2])<<8 | uint16(buffer[3])
+	h.QuestionCount = uint16(buffer[4])<<8 | uint16(buffer[5])
+	h.AnswerRecordCount = uint16(buffer[6])<<8 | uint16(buffer[7])
+	h.AuthorityRecordCount = uint16(buffer[8])<<8 | uint16(buffer[9])
+	h.AdditionalRecordCount = uint16(buffer[10])<<8 | uint16(buffer[11])
 
 	return h, 12, nil
 }

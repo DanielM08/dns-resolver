@@ -40,34 +40,6 @@ func GenMessage(domainName string) ([]byte, error) {
 	return message, nil
 }
 
-func GenMessageToRootServer() ([]byte, error) {
-	header := Header{
-		ID:                    uint16(rand.Intn(1 << 16)),
-		Flags:                 0,
-		QuestionCount:         1,
-		AnswerRecordCount:     0,
-		AuthorityRecordCount:  0,
-		AdditionalRecordCount: 0,
-	}
-	encodedHeader := header.Encode()
-
-	question := Question{
-		Name:  "dns.google.com",
-		Type:  1,
-		Class: 1,
-	}
-
-	questionEncoded, err := question.Encode()
-
-	if err != nil {
-		return nil, err
-	}
-
-	message := append(encodedHeader, questionEncoded...)
-	message = append(message, 0, 0, 0)
-	return message, nil
-}
-
 func DecodeMessage(dnsResponse []byte) (DNSMessage, error) {
 	header, offset, err := DecodeHeader(dnsResponse)
 
@@ -106,7 +78,6 @@ func DecodeMessage(dnsResponse []byte) (DNSMessage, error) {
 		Authority:  authorityRecords,
 		Additional: additionalRecords,
 	}, nil
-
 }
 
 func getResourceRecords(buffer []byte, count, offset int) ([]ResourceRecord, int, error) {

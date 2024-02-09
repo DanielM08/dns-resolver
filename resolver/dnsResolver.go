@@ -7,37 +7,10 @@ import (
 
 type nameServers []string
 
+var ROOT_NAME_SERVER = "192.5.5.241"
+
 func ResolveDomainName(domainName, rootNameServer string) ([]string, error) {
-
-	visitedNS := make(map[string]bool)
-	NSInQueue := nameServers{rootNameServer}
-
-	for len(NSInQueue) > 0 {
-		ns := NSInQueue[0]
-		NSInQueue = NSInQueue[1:]
-
-		response, err := findDomainName(domainName, ns, &NSInQueue, &visitedNS)
-
-		// fmt.Printf("NSInQueue: %+v\n", NSInQueue)
-
-		if err != nil {
-			return nil, err
-		}
-
-		if response != nil {
-			return response, nil
-		}
-	}
-
-	return nil, fmt.Errorf("No answer found\n")
-}
-
-func findDomainName(domainName, rootNameServer string, NSInQueue *nameServers, visitedNS *map[string]bool) ([]string, error) {
 	dnsMessage, err := queryMessage(rootNameServer, domainName)
-
-	// fmt.Printf("Response from %s: %+v\n", rootNameServer, dnsMessage)
-
-	// fmt.Printf("dnsMessage: %+v\n", dnsMessage)
 
 	if err != nil {
 		return nil, err
@@ -53,12 +26,14 @@ func findDomainName(domainName, rootNameServer string, NSInQueue *nameServers, v
 
 	if len(dnsMessage.Additional) > 0 {
 		for _, rr := range dnsMessage.Additional {
-			if rr.Type == 1 && rr.Class == 1 && rr.Length == 4 {
-				// fmt.Printf("Adding %s to NSInQueue\n", rr.Data)
-				if _, ok := (*visitedNS)[rr.Data]; !ok {
-					(*visitedNS)[rr.Data] = true
-					*NSInQueue = append(*NSInQueue, rr.Data)
+			if rr.Type == 1 {
+				response, err := ResolveDomainName(domainName, rr.Data)
+
+				if err != nil {
+					return nil, err
 				}
+
+				return response, nil
 			}
 		}
 	}
@@ -67,25 +42,26 @@ func findDomainName(domainName, rootNameServer string, NSInQueue *nameServers, v
 		var nameServerAddress []string
 		for _, rr := range dnsMessage.Authority {
 			if rr.Type == 2 {
-				if _, ok := (*visitedNS)[rr.Data]; !ok {
-					(*visitedNS)[rr.Data] = true
-
-					nameServerAddress, err = findDomainName(rr.Data, rootNameServer, NSInQueue, visitedNS)
-					if err != nil {
-						return nil, err
-					}
-					break
+				nameServerAddress, err = ResolveDomainName(rr.Data, ROOT_NAME_SERVER)
+				if err != nil {
+					return nil, err
 				}
+				break
 			}
 		}
 		if nameServerAddress != nil {
 			for _, ip := range nameServerAddress {
-				*NSInQueue = append(*NSInQueue, ip)
+				response, err := ResolveDomainName(domainName, ip)
+				if err != nil {
+					return nil, err
+				}
+
+				return response, nil
 			}
 		}
 	}
 
-	return nil, nil
+	return nil, fmt.Errorf("No answer found\n")
 }
 
 func queryMessage(rootNameServer, domainName string) (*DNSMessage, error) {

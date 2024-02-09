@@ -35,12 +35,7 @@ func (q *Question) Encode() ([]byte, error) {
 
 func DecodeQuestion(data []byte, offset int) (*Question, int, error) {
 	var q = &Question{}
-	var err error = nil
-	q.Name, offset, err = DecodeDomainName(data, offset)
-
-	if err != nil {
-		return nil, 0, err
-	}
+	q.Name, offset = DecodeDomainNameWithPointer(data, offset)
 
 	q.Type = uint16(data[offset])<<8 | uint16(data[offset+1])
 	q.Class = uint16(data[offset+2])<<8 | uint16(data[offset+3])

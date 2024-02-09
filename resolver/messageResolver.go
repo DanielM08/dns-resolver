@@ -1,7 +1,6 @@
 package resolver
 
 import (
-	"fmt"
 	"math/rand"
 )
 
@@ -13,10 +12,38 @@ type DNSMessage struct {
 	Additional []ResourceRecord
 }
 
-func GenMessage() ([]byte, error) {
+func GenMessage(domainName string) ([]byte, error) {
 	header := Header{
 		ID:                    uint16(rand.Intn(1 << 16)),
-		Flags:                 256,
+		Flags:                 0,
+		QuestionCount:         1,
+		AnswerRecordCount:     0,
+		AuthorityRecordCount:  0,
+		AdditionalRecordCount: 0,
+	}
+	encodedHeader := header.Encode()
+
+	question := Question{
+		Name:  domainName,
+		Type:  1,
+		Class: 1,
+	}
+
+	questionEncoded, err := question.Encode()
+
+	if err != nil {
+		return nil, err
+	}
+
+	message := append(encodedHeader, questionEncoded...)
+	message = append(message, 0, 0, 0)
+	return message, nil
+}
+
+func GenMessageToRootServer() ([]byte, error) {
+	header := Header{
+		ID:                    uint16(rand.Intn(1 << 16)),
+		Flags:                 0,
 		QuestionCount:         1,
 		AnswerRecordCount:     0,
 		AuthorityRecordCount:  0,
@@ -30,9 +57,6 @@ func GenMessage() ([]byte, error) {
 		Class: 1,
 	}
 
-	fmt.Printf("Header: %+v\n", header)
-	fmt.Printf("Question: %+v\n", question)
-
 	questionEncoded, err := question.Encode()
 
 	if err != nil {
@@ -45,8 +69,6 @@ func GenMessage() ([]byte, error) {
 }
 
 func DecodeMessage(dnsResponse []byte) (DNSMessage, error) {
-	fmt.Println("Decoding message..., message size: ", len(dnsResponse))
-
 	header, offset, err := DecodeHeader(dnsResponse)
 
 	if err != nil {
@@ -76,12 +98,6 @@ func DecodeMessage(dnsResponse []byte) (DNSMessage, error) {
 	if err != nil {
 		return DNSMessage{}, err
 	}
-
-	fmt.Printf("Response Header: %+v\n", header)
-	fmt.Printf("Response Question: %+v\n", question)
-	fmt.Printf("Answer Records: %+v\n", answerRecords)
-	fmt.Printf("Authority Records: %+v\n", authorityRecords)
-	fmt.Printf("Additional Records: %+v\n", additionalRecords)
 
 	return DNSMessage{
 		Header:     *header,

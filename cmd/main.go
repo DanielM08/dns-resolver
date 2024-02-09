@@ -2,50 +2,23 @@ package main
 
 import (
 	"fmt"
-	"net"
 
 	"github.com/DanielM08/dns-resolver/resolver"
 )
 
 func main() {
 
-	message, err := resolver.GenMessage()
+	domainName := "maxmilhas.com.br"
+	rootNameServer := "198.41.0.4"
 
-	conn, err := net.DialUDP("udp", nil, &net.UDPAddr{
-		IP:   net.IPv4(8, 8, 8, 8),
-		Port: 53, // Well known port for DNS
-	})
+	// domainName := "codingchallenges.fyi"
+	// rootNameServer := "192.36.148.17"
 
-	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-	}
-
-	defer conn.Close()
-
-	fmt.Println("DNS Server is listening on port: ", conn.LocalAddr().(*net.UDPAddr).Port)
-
-	fmt.Printf("Encoded Message sent: %x\n", message)
-	_, err = conn.Write(message)
-	if err != nil {
-		fmt.Println("Error while sending message:", err)
-	}
-
-	fmt.Println("------------------")
-
-	response := make([]byte, 512) // 512 bytes is the maximum size of a DNS message
-	n, err := conn.Read(response)
-	if err != nil {
-		fmt.Println("Error while reading response:", err)
-		return
-	}
-
-	// Trim the response to actual size
-	response = response[:n]
-
-	_, err = resolver.DecodeMessage(response)
+	response, err := resolver.ResolveDomainName(domainName, rootNameServer)
 
 	if err != nil {
-		fmt.Println("Error while decoding message:", err)
-		return
+		fmt.Printf("Error: %s", err)
+	} else {
+		fmt.Printf("Response: %+v\n", response)
 	}
 }

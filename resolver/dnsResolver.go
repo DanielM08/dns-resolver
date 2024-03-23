@@ -49,19 +49,21 @@ func ResolveDomainName(domainName, rootNameServer string) ([]string, error) {
 				break
 			}
 		}
-		if nameServerAddress != nil {
-			for _, ip := range nameServerAddress {
-				response, err := ResolveDomainName(domainName, ip)
-				if err != nil {
-					return nil, err
-				}
 
-				return response, nil
+		var response []string = nil
+		for _, ip := range nameServerAddress {
+			res, err := ResolveDomainName(domainName, ip)
+			if err != nil {
+				return nil, err
 			}
+			response = res
+		}
+		if response != nil {
+			return response, nil
 		}
 	}
 
-	return nil, fmt.Errorf("No answer found\n")
+	return nil, fmt.Errorf("no answer found")
 }
 
 func queryMessage(rootNameServer, domainName string) (*DNSMessage, error) {
@@ -74,7 +76,7 @@ func queryMessage(rootNameServer, domainName string) (*DNSMessage, error) {
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("Error: %v\n", err)
+		return nil, err
 	}
 
 	defer conn.Close()
@@ -87,17 +89,19 @@ func queryMessage(rootNameServer, domainName string) (*DNSMessage, error) {
 
 	_, err = conn.Write(message)
 	if err != nil {
-		return nil, fmt.Errorf("Error while sending message: %v\n", err)
+		return nil, fmt.Errorf("error while sending message: %v", err)
 	}
 
 	buffer := make([]byte, 512) // 512 bytes is the maximum size of a DNS message
 	_, _, err = conn.ReadFromUDP(buffer)
 	if err != nil {
-
-		return nil, fmt.Errorf("Error while reading response: %v\n", err)
+		return nil, fmt.Errorf("error while reading response: %v", err)
 	}
 
 	responseMessage, err := DecodeMessage(buffer)
+	if err != nil {
+		return nil, err
+	}
 
 	return &responseMessage, nil
 }

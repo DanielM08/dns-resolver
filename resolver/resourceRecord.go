@@ -35,7 +35,7 @@ func DecodeResourceRecord(buffer []byte, offset int) (*ResourceRecord, int, erro
 			labels = append(labels, fmt.Sprintf("%d", buffer[offset+10+i]))
 		}
 		rrData = strings.Join(labels, ".")
-	} else if rrType == 2 || rrType == 6 {
+	} else if rrType == 2 || rrType == 5 || rrType == 6 {
 		rrData, _ = DecodeDomainName(buffer, offset+10)
 	} else {
 		rrData = string(buffer[offset+10 : offset+10+int(rrLength)])

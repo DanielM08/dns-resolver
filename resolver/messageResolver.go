@@ -65,7 +65,7 @@ func DecodeMessage(dnsResponse []byte) (DNSMessage, error) {
 		return DNSMessage{}, err
 	}
 
-	additionalRecords, offset, err := getResourceRecords(dnsResponse, int(header.AdditionalRecordCount), offset)
+	additionalRecords, _, err := getResourceRecords(dnsResponse, int(header.AdditionalRecordCount), offset)
 
 	if err != nil {
 		return DNSMessage{}, err

@@ -18,7 +18,7 @@ func (q *Question) Encode() ([]byte, error) {
 
 	for _, label := range dnsLabels {
 		if len(label) > 63 {
-			return nil, fmt.Errorf("Invalid label. Label %s exceeds 63 characters", label)
+			return nil, fmt.Errorf("invalid label. Label %s exceeds 63 characters", label)
 		}
 
 		buffer = append(buffer, byte(len(label))) // 1 byte

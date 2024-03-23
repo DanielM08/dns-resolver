@@ -15,7 +15,7 @@ func main() {
 	response, err := resolver.ResolveDomainName(domainName, rootNameServer)
 
 	if err != nil {
-		fmt.Printf("Error: %s", err)
+		fmt.Printf("Error: %s\n", err)
 	} else {
 		fmt.Printf("Response: %+v\n", response)
 	}
